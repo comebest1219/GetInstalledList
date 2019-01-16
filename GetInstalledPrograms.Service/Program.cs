@@ -30,6 +30,7 @@ namespace GetInstalledPrograms.Service
                 gipService.Start();
 
                 Console.WriteLine("服務已啟動，請按下 Enter 鍵關閉服務...");
+                Console.WriteLine("---------------------------------------");
                 Console.ReadKey();
 
                 gipService.Stop();

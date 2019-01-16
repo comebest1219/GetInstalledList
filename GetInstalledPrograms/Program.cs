@@ -32,6 +32,8 @@ namespace GetInstalledPrograms
             {
                 rsaCryption = new RSACryption(AppLib.ReadFromFile(publicKeyPath), AppLib.ReadFromFile(privateKeyPath));
                 ReadProgramsList(programsPath);
+                List<InstalledProgram> nowInstalledPrograms = InstalledProgram.GetInstalledPrograms();
+                CompareAndWriteLog(nowInstalledPrograms, installedPrograms);
             }
             //第一次 or 遺失任一檔案
             else

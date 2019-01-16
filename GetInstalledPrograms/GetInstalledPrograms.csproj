@@ -56,6 +56,7 @@
   <ItemGroup>
     <Compile Include="App_Class\AppLib.cs" />
     <Compile Include="App_Class\InstalledPrograms.cs" />
+    <Compile Include="Model\EventTypeEumn.cs" />
     <Compile Include="Model\InstalledListData.cs" />
     <Compile Include="Model\InstalledListDataLog.cs" />
     <Compile Include="Program.cs" />

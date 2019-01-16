@@ -62,6 +62,7 @@
     <Compile Include="GipService.Designer.cs">
       <DependentUpon>GipService.cs</DependentUpon>
     </Compile>
+    <Compile Include="Model\EventTypeEumn.cs" />
     <Compile Include="Model\InstalledListData.cs" />
     <Compile Include="Model\InstalledListDataLog.cs" />
     <Compile Include="Program.cs" />

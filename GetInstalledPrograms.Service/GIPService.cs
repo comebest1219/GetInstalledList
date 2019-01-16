@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Management;
+using System.Net;
 using System.ServiceProcess;
 using System.Text;
 using System.Threading.Tasks;
@@ -18,6 +19,7 @@ namespace GetInstalledPrograms.Service
 {
     public partial class GipService : ServiceBase
     {
+        private const string serverUrl = "https://192.168.60.52:18002/CustomEvent/Incoming/";
         static string programsPath = Path.Combine(Directory.GetCurrentDirectory(), "InstalledList");
         static string programsTestPath = Path.Combine(Directory.GetCurrentDirectory(), "InstalledListTest.txt");
         static string publicKeyPath = Path.Combine(Directory.GetCurrentDirectory(), "PublicKey");
@@ -25,13 +27,6 @@ namespace GetInstalledPrograms.Service
         static string logPath = Path.Combine(Directory.GetCurrentDirectory(), "EventLog.txt");
         static List<InstalledProgram> installedPrograms = new List<InstalledProgram>();
         static RSACryption rsaCryption;
-        private Timer MyTimer;
-
-        public enum EventType
-        {
-            新增程式 = 1,
-            移除程式 = 2
-        }
 
         public GipService()
         {
@@ -40,11 +35,16 @@ namespace GetInstalledPrograms.Service
 
         public void Start()
         {
+            string txt = string.Format("事件時間:{0} 事件名稱:{1}", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), "服務啟動");
+            AppLib.WriteToFile(txt, logPath, false);
 
+            //有檔案 並與目前取得清單比對(避免服務停止時有
             if (File.Exists(programsPath) && File.Exists(publicKeyPath) && File.Exists(privateKeyPath))
             {
                 rsaCryption = new RSACryption(AppLib.ReadFromFile(publicKeyPath), AppLib.ReadFromFile(privateKeyPath));
                 ReadProgramsList(programsPath);
+                List <InstalledProgram> nowInstalledPrograms = InstalledProgram.GetInstalledPrograms();
+                CompareAndWriteLog(nowInstalledPrograms, installedPrograms);
             }
             //第一次 or 遺失任一檔案
             else
@@ -56,19 +56,23 @@ namespace GetInstalledPrograms.Service
                 WriteProgramsList(installedPrograms, programsPath);
             }
 
+            //寫出目前取得的軟體名稱
+            Console.WriteLine("---------------------------------------");
             Console.WriteLine("目前記錄取得{0}筆已安裝軟體", installedPrograms.Count);
             foreach (var item in installedPrograms)
             {
                 Console.WriteLine(item.DisplayName);
             }
             Console.WriteLine("---------------------------------------");
+
+            //啟動監聽
             WMIReceiveEvent();
-            Console.ReadKey();
+
         }
 
         protected override void OnStart(string[] args)
         {
-            string txt = "GetInstalledPrograms Service start!";
+            string txt = string.Format("事件時間:{0} 事件名稱:{1}", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), "服務啟動"); 
             AppLib.WriteToFile(txt, logPath, false);
             Console.WriteLine(txt);
             Start();
@@ -76,7 +80,7 @@ namespace GetInstalledPrograms.Service
 
         protected override void OnStop()
         {
-            string txt = "GetInstalledPrograms Service stop!";
+            string txt = string.Format("事件時間:{0} 事件名稱:{1} \r\n", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), "服務停止");
             AppLib.WriteToFile(txt, logPath, false);
             Console.WriteLine(txt);
         }
@@ -207,7 +211,8 @@ namespace GetInstalledPrograms.Service
                     string logString = string.Empty;
                     foreach (var item in dataLog)
                     {
-                        logString = string.Format("事件時間:{0} 事件名稱:{1} 程式名稱:{2}", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), item.EventType, item.Name);
+                        logString = string.Format("事件時間:{0} 事件名稱:{1} 程式名稱:{2} 安裝時間:{3}", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
+                                    , item.EventType, item.Name,item.InstallDate);
                     }
                     AppLib.WriteToFile(logString, logPath, false);
                     WriteProgramsList(newList, programsPath);
@@ -224,5 +229,46 @@ namespace GetInstalledPrograms.Service
 
 
         }
+
+        //private void UploadAPI(string jsonDataString)
+        //{
+        //    WebClient client = new WebClient();
+
+        //    try
+        //    {
+        //        //Uri uu = new Uri("https://192.168.1.250:18002/CustomEvent/Incoming");
+        //        Uri url = new Uri(serverUrl);
+        //        client.Encoding = Encoding.UTF8;
+        //        client.Headers.Add(HttpRequestHeader.ContentType, "application/json");
+        //        client.up
+        //        ServicePointManager.ServerCertificateValidationCallback += (sender1, cert, chain, sslPolicyErrors) => true;
+        //        client.UploadDataCompleted += Client_UploadDataCompleted;
+        //        client.UploadDataAsync(url, "POST", Encoding.UTF8.GetBytes(jsonDataString));
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Console.Write(ex.Message);
+        //    }
+
+        //    using (WebClient wc = new WebClient())
+        //    {
+        //        try
+        //        {
+        //            wc.Encoding = Encoding.UTF8;
+
+        //            NameValueCollection nc = new NameValueCollection();
+        //            nc["id"] = "aaa";
+        //            nc["pw"] = "bbb";
+
+        //            byte[] bResult = wc.UploadValues(Config.PostURL, nc);
+
+        //            string resultXML = Encoding.UTF8.GetString(bResult);
+        //        }
+        //        catch (WebException ex)
+        //        {
+        //            throw new Exception("無法連接遠端伺服器");
+        //        }
+        //    }
+        //}
     }
 }

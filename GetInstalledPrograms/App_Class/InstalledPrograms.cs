@@ -132,7 +132,6 @@ namespace GetInstalledPrograms.App_Class
                 Debug.WriteLine(ex.Message);
                 return new List<InstalledProgram>();
             }
-
         }
 
         //// Sorting function, required by IComparable interface
@@ -198,10 +197,19 @@ namespace GetInstalledPrograms.App_Class
             return ProgramList;
         }
 
-        private static bool IsProgramInList(string ProgramName, List<InstalledProgram> ListToCheck)
+        private static bool IsProgramInList(InstalledProgram newInstalledProgram, List<InstalledProgram> ListToCheck)
         {
-            //InstalledProgram installedProgram = new InstalledProgram(ProgramName);
-            return ListToCheck.Contains(new InstalledProgram(ProgramName));
+            bool isInList = false;
+            foreach (var item in ListToCheck)
+            {
+                if(item.DisplayName == newInstalledProgram.DisplayName && item.EstimatedSize == newInstalledProgram.EstimatedSize
+                    && item.Version == newInstalledProgram.Version && item.InstallDate == newInstalledProgram.InstallDate)
+                {
+                    isInList = true; break;
+                }
+            }           
+            return isInList;
+            //return ListToCheck.Contains(new InstalledProgram(ProgramName));
         }
 
         private static List<InstalledProgram> GetUserInstallerKeyPrograms(RegistryKey CuInstallerKey, RegistryKey HklmRootKey, List<InstalledProgram> ExistingProgramList)
@@ -232,6 +240,8 @@ namespace GetInstalledPrograms.App_Class
                                         {
                                             string Name = CuInstallerKey.OpenSubKey(CuProductGuid).GetValue("ProductName", String.Empty).ToString();
                                             string ProgVersion = String.Empty;
+                                            string ProgInstallDate = String.Empty;
+                                            string ProgEstimatedSize = String.Empty;
                                             try
                                             {
                                                 ProgVersion = UserDataProgramKey.GetValue("DisplayVersion", String.Empty).ToString();
@@ -240,11 +250,28 @@ namespace GetInstalledPrograms.App_Class
                                             {
                                                 Debug.WriteLine(ex.Message);
                                             }
+                                            try
+                                            {
+                                                ProgInstallDate = UserDataProgramKey.GetValue("InstallDate", String.Empty).ToString();
+                                            }
+                                            catch (Exception ex)
+                                            {
+                                                Debug.WriteLine(ex.Message);
+                                            }
+
+                                            try
+                                            {
+                                                ProgEstimatedSize = UserDataProgramKey.GetValue("EstimatedSize", String.Empty).ToString();
+                                            }
+                                            catch (Exception ex)
+                                            {
+                                                Debug.WriteLine(ex.Message);
+                                            }
 
                                             if ((!(Name == String.Empty)
-                                                        && !InstalledProgram.IsProgramInList(Name, ExistingProgramList)))
+                                                        && !InstalledProgram.IsProgramInList(new InstalledProgram(Name, ProgVersion, ProgInstallDate, ProgEstimatedSize), ExistingProgramList)))
                                             {
-                                                ExistingProgramList.Add(new InstalledProgram(Name));
+                                                ExistingProgramList.Add(new InstalledProgram(Name, ProgVersion, ProgInstallDate, ProgEstimatedSize));
                                                 ProductFound = true;
                                             }
 
@@ -345,7 +372,7 @@ namespace GetInstalledPrograms.App_Class
                                         // Add the program to our list if we are including updates in this search
                                         string Name = CurrentSubKey.GetValue("DisplayName", String.Empty).ToString();
                                         if ((!(Name == String.Empty)
-                                                    && !InstalledProgram.IsProgramInList(Name, ExistingProgramList)))
+                                                    && !InstalledProgram.IsProgramInList(new InstalledProgram(Name, ProgVersion, ProgInstallDate, ProgEstimatedSize), ExistingProgramList)))
                                         {
                                             ExistingProgramList.Add(new InstalledProgram(Name, ProgVersion,ProgInstallDate, ProgEstimatedSize));
                                         }
@@ -371,7 +398,7 @@ namespace GetInstalledPrograms.App_Class
                                     {
                                         string Name = CurrentSubKey.GetValue("DisplayName", String.Empty).ToString();
                                         if ((!(Name == String.Empty)
-                                                    && !InstalledProgram.IsProgramInList(Name, ExistingProgramList)))
+                                                    && !InstalledProgram.IsProgramInList(new InstalledProgram(Name, ProgVersion, ProgInstallDate, ProgEstimatedSize), ExistingProgramList)))
                                         {
                                             ExistingProgramList.Add(new InstalledProgram(Name, ProgVersion, ProgInstallDate, ProgEstimatedSize));
                                         }
@@ -430,7 +457,7 @@ namespace GetInstalledPrograms.App_Class
                                     Debug.WriteLine((SubKeyName + (" - " + ex.Message)));
                                 }
 
-                                if ((!(Name == String.Empty) && !InstalledProgram.IsProgramInList(Name, ExistingProgramList)))
+                                if ((!(Name == String.Empty) && !InstalledProgram.IsProgramInList(new InstalledProgram(Name, ProgVersion, ProgInstallDate, ProgEstimatedSize), ExistingProgramList)))
                                 {
                                     ExistingProgramList.Add(new InstalledProgram(Name, ProgVersion, ProgInstallDate, ProgEstimatedSize));
                                 }
